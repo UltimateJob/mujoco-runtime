@@ -108,6 +108,10 @@ class RobosuiteAdapter:
     def visual_model_data(self) -> Tuple[Any, Any]:
         return self._env.sim.model, self._env.sim.data
 
+    def visual_geom_groups(self) -> Tuple[int, ...]:
+        mask = self._env.sim._render_context_offscreen.vopt.geomgroup
+        return tuple(index for index, visible in enumerate(mask) if visible)
+
     def visual_source_for_body(self, body_id: int, object_source_ids: Iterable[str]) -> str | None:
         return public_source_for_body(
             self._env.sim.model,

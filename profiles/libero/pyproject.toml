@@ -27,7 +27,8 @@ dependencies = [
   "future==0.18.2",
   "matplotlib==3.5.3",
   "numpy==1.22.4",
-  "opencv-python-headless==4.6.0.66",
+  # robosuite 依赖 opencv-python；固定同一个发行包，避免两个发行包覆盖 cv2。
+  "opencv-python==4.6.0.66",
   "robosuite==1.4.0",
   "semantic-sim-profiles",
   "torch==1.13.1",

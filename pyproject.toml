@@ -59,6 +59,10 @@ packages = ["src/plugin_mujoco"]
 [tool.pytest.ini_options]
 addopts = "-p no:cacheprovider --strict-markers -ra"
 testpaths = ["tests"]
+# 根单测门禁需要验证 profiles/common 的独立 Runtime 服务（无场景源码即可 ready）。
+# 该包属于独立锁文件的项目，与根环境的 fastapi/uvicorn 版本不同，不能作为根依赖安装，
+# 因此按源码路径加入，保证 uv sync --frozen --extra dev 之后仍可导入。
+pythonpath = ["profiles/common/src"]
 markers = [
   "native: requires a real MuJoCo installation and asset repository",
   "process: starts the API server or a runtime thread",

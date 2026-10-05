@@ -93,6 +93,20 @@ def test_pack_semver_must_match_python_wheel_version():
         builder.python_wheel_version("0.4.0-preview")
 
 
+def test_libero_pack_matches_continuous_runtime_contract():
+    profile = _builder().profile_table()["libero-robosuite-1.4"]
+    assert profile.content_requirements == {}
+    assert "franka_model" not in profile.content_requirements
+    assert ROOT / "packages" / "mujoco-visuals" in profile.wheel_projects
+    source = ROOT / "runtime-packs/libero-robosuite-1.4"
+    assert json.loads((source / "smoke-request.json").read_text())["layout"] == "init-0"
+    settings = json.loads((source / "runtime-settings.json").read_text())
+    assert settings == {"controller": "OSC_POSE", "camera_width": 256, "camera_height": 256}
+    lock = (ROOT / "profiles/libero/uv.lock").read_text()
+    assert 'name = "opencv-python-headless"' not in lock
+    assert 'name = "opencv-python"\nversion = "4.6.0.66"' in lock
+
+
 def test_pack_catalog_is_stamped_with_exact_pack_version(tmp_path):
     builder = _builder()
     source = ROOT / "runtime-packs" / "native-mujoco" / "catalog" / "catalog.yaml"

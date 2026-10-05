@@ -17,8 +17,9 @@
 
 PYTEST_ENV = PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
 
-LIBERO_REVISION = 8f1084e3132a39270c3a13ebe37270a43ece2a01
-LIBERO_PRO_REVISION = 0bcf73621c789ffd6ed8858467a89df9ca94fd6b
+# 专项验证与发布构建使用同一来源锁，更新版本只改 sources.lock.yaml。
+LIBERO_REVISION = $(shell uv run --project profiles/common --frozen python -c "import yaml; print(yaml.safe_load(open('profiles/sources.lock.yaml'))['sources']['libero']['commit'])")
+LIBERO_PRO_REVISION = $(shell uv run --project profiles/common --frozen python -c "import yaml; print(yaml.safe_load(open('profiles/sources.lock.yaml'))['sources']['libero_pro']['commit'])")
 
 install:
 	uv sync --frozen --extra dev

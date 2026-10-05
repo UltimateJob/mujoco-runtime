@@ -31,7 +31,7 @@ import math
 import struct
 import zlib
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence, Tuple
 
 import numpy as np
 
@@ -478,11 +478,15 @@ class MujocoVisualExporter:
         data: Any,
         mujoco_module: Any = None,
         source_for_body: Optional[Callable[[int], Optional[str]]] = None,
+        visible_geom_groups: Optional[Iterable[int]] = None,
     ) -> None:
         self.model = model
         self.data = data
         self.mj = mujoco_module
         self.source_for_body = source_for_body or (lambda _body_id: None)
+        # 原生任务可声明自己的渲染分组；不改变 MjModel 的碰撞几何或物理属性。
+        # 未声明时保留原有 R1 展示范围。
+        self.visible_geom_groups = frozenset((0, 1, 2) if visible_geom_groups is None else visible_geom_groups)
         self._body_ids = tuple(range(int(model.nbody)))
         self._node_ids = tuple("node-%06d" % index for index in range(len(self._body_ids)))
 
@@ -530,7 +534,7 @@ class MujocoVisualExporter:
                     )
                 if (
                     int(geom_id) in hidden_duplicate_geoms
-                    or int(self.model.geom_group[geom_id]) > 2
+                    or int(self.model.geom_group[geom_id]) not in self.visible_geom_groups
                     or float(self.model.geom_rgba[geom_id][3]) <= 0.0
                     # Robot 资产中的显式 *_collision 是控制/接触几何，不是视觉
                     # 内容。场景物体本身仍可同时参与碰撞和显示，不能按 contype
@@ -680,6 +684,9 @@ class MujocoVisualExporter:
         groups: Dict[Tuple[Any, ...], List[int]] = {}
         matids = getattr(self.model, "geom_matid", None)
         for geom_id in range(len(self.model.geom_bodyid)):
+            # 已隐藏的接触代理不能参与视觉去重，否则它会把同位的真实外观也删掉。
+            if int(self.model.geom_group[geom_id]) not in self.visible_geom_groups:
+                continue
             if int(self.model.geom_type[geom_id]) != _GEOM_MESH:
                 continue
             key = (
@@ -727,12 +734,10 @@ class MujocoVisualExporter:
             faces = np.asarray(
                 self.model.mesh_face[face_start : face_start + face_count], dtype="<u4"
             )
-            mesh_scale = getattr(self.model, "mesh_scale", None)
-            scale = (
-                tuple(float(value) for value in mesh_scale[mesh_id])
-                if mesh_scale is not None
-                else (1.0, 1.0, 1.0)
-            )
+            # MjModel.mesh_vert 是编译后的顶点，MJCF 的 mesh.scale 已烘焙其中。
+            # 再乘 mesh_scale 会把柜体缩成原尺寸的 5%、饼干缩成 0.5%，造成
+            # Web 物品看似消失、与碰撞体不符；导出必须使用编译后的米制尺寸。
+            scale = (1.0, 1.0, 1.0)
             normal_start = int(self.model.mesh_normaladr[mesh_id])
             normal_count = int(self.model.mesh_normalnum[mesh_id])
             if normal_start >= 0 and normal_count > 0:

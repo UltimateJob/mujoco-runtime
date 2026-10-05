@@ -273,6 +273,20 @@ def create_app(service: Optional[ProfileRuntimeService] = None) -> FastAPI:
     def hold_robot(robot_id: str, payload: Dict[str, Any], request: Request) -> Dict[str, Any]:
         return _service(request).active().hold(robot_id, int(payload.get("scene_generation", 0)))
 
+    @robot.post("/robots/{robot_id}/executions/{execution_id}/cancel")
+    def cancel_execution(
+        robot_id: str, execution_id: str, payload: Dict[str, Any], request: Request,
+    ) -> Dict[str, Any]:
+        _service(request).active().cancel_execution(
+            robot_id, execution_id, int(payload.get("scene_generation", 0))
+        )
+        return {"execution_id": execution_id, "status": "cancelled"}
+
+    @robot.get("/robots/{robot_id}/observation")
+    def synchronized_observation(robot_id: str, request: Request) -> Response:
+        metadata, payload = _service(request).active().synchronized_observation(robot_id)
+        return Response(_packet(metadata, payload), media_type="application/octet-stream")
+
     @robot.get("/robots/{robot_id}/sensors")
     def sensors(robot_id: str, request: Request) -> List[Dict[str, Any]]:
         return _service(request).active().sensor_descriptors(robot_id)
@@ -418,6 +432,11 @@ def _frame_headers(metadata: Dict[str, Any]) -> Dict[str, str]:
 
 
 def main() -> None:
+    import sys
+    if len(sys.argv) == 3 and sys.argv[1] == "--prepare-scene":
+        from semantic_sim_profiles.scene_preview import prepare
+        prepare(sys.argv[2])
+        return
     host = os.getenv("PLUGIN_MUJOCO_HOST", "127.0.0.1")
     port = int(os.getenv("PLUGIN_MUJOCO_PORT", "8091"))
     uvicorn.run(create_app(), host=host, port=port)

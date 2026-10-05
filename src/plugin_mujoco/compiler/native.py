@@ -26,11 +26,10 @@ from typing import Any, Literal
 
 from pydantic import Field
 
-from plugin_mujoco.compiler.rules import is_relative_asset_key
 from plugin_mujoco.models import SceneDescriptor, StrictModel
 from plugin_mujoco.scene.catalog import AssetSpec, RobotSpec, SceneDefinition, SensorSpec
 
-from .rules import asset_file_issues, document_rule_issues
+from .rules import asset_file_issues, document_rule_issues, is_relative_asset_key
 
 _SAFE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$")
 
