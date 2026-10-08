@@ -36,6 +36,12 @@ def state_summary(env):
 
 
 def describe_difference(baseline, current):
+    """Describe object-pose and joint changes between two state summaries.
+
+    Reports translation changes of at least 1 mm, orientation changes of at
+    least 1 degree, and joint changes above per-unit thresholds; returns a
+    "no significant change" message when nothing exceeds them.
+    """
     changes = []
     for name, value in current["objects"].items():
         old = baseline["objects"].get(name)
@@ -65,6 +71,12 @@ def describe_difference(baseline, current):
 
 
 def prepare(request_path):
+    """Generate initial-state preview images and result.json for a request file.
+
+    The request JSON names the scene_key, the variant initial states and the
+    output directory. Results are written incrementally so an interrupted run
+    can be resumed; already-generated variants are reused from the cache.
+    """
     request = json.loads(Path(request_path).read_text())
     output = Path(request["output_dir"])
     output.mkdir(parents=True, exist_ok=True)
